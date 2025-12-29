@@ -12,6 +12,7 @@ st.set_page_config(
 
 # ---------------- FUNÇÕES ----------------
 def normalizar_texto(texto):
+    """Normaliza o texto para busca (lowercase, sem acentos, sem espaços extras)"""
     if not isinstance(texto, str):
         return ""
     texto = texto.strip().lower()
@@ -19,32 +20,33 @@ def normalizar_texto(texto):
     texto = texto.encode("ascii", "ignore").decode("utf-8")
     return re.sub(r"\s+", " ", texto)
 
-def carregar_planilha_gdrive(sheet_id: str):
-    """
-    Monta o link de exportação .xlsx do Google Sheets
-    e tenta carregar como DataFrame.
-    """
-    base_url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=xlsx"
-    return pd.read_excel(base_url)
-
 # ---------------- TÍTULO ----------------
 st.title("SPX | Consulta de Rotas")
 
-# ---------------- CARREGA DADOS ----------------
-SHEET_ID = "1x4P8sHQ8cdn7tJCDRjPP8qm4aFIKJ1tx"  # seu ID aqui
-
+# ---------------- CARREGAR BASE ----------------
 try:
+    # Link de exportação direto da planilha do Google Drive
     url = "https://docs.google.com/spreadsheets/d/1x4P8sHQ8cdn7tJCDRjPP8qm4aFIKJ1tx/export?format=xlsx"
     df = pd.read_excel(url)
 
+    # Normaliza nomes das colunas
     df.columns = df.columns.str.strip().str.lower()
 
+    # Verifica se a coluna 'nome' existe
+    if "nome" not in df.columns:
+        st.error("❌ A coluna 'nome' não foi encontrada na planilha.")
+        st.stop()
+
+    # Cria coluna normalizada para busca
     df["nome_normalizado"] = df["nome"].apply(normalizar_texto)
+
+    st.markdown(
+        f"📅 Base carregada com sucesso! Última atualização em: **{datetime.now().strftime('%d/%m/%Y %H:%M')}**"
+    )
 
 except Exception as e:
     st.error(f"❌ Erro ao carregar a base: {e}")
     st.stop()
-
 
 # ---------------- BUSCA ----------------
 st.markdown("### 🔎 Buscar rota")
@@ -61,5 +63,6 @@ if nome_input:
         st.success("✅ Motorista encontrado")
         st.markdown(f"**🚚 Rota:** {rota}  \n**📍 Bairro:** {bairro}")
     else:
-        st.warning("⚠️ Nenhuma rota encontrada para esse nome")
+        st.warning("⚠️ Nenhuma rota encontrada para este nome")
+
 
