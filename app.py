@@ -65,7 +65,7 @@ nome_input = st.text_input("Nome completo do motorista")
 if nome_input:
     nome_busca = normalizar_texto(nome_input)
 
-    # usa contains simples, sem regex complexo, para garantir todas as ocorrências
+    # busca simples para capturar todas as ocorrências
     resultado = df[df["nome_normalizado"].str.contains(nome_busca, na=False)]
 
     # DEBUG: mostra todas as linhas encontradas (pode comentar depois)
