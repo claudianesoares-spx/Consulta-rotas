@@ -23,17 +23,20 @@ def normalizar_texto(texto):
 @st.cache_data(ttl=300)
 def carregar_planilha():
     try:
-        url = "https://docs.google.com/spreadsheets/d/SEU_ID_DA_PLANILHA_ROTAS/export?format=xlsx"
+        url = "https://docs.google.com/spreadsheets/d/1x4P8sHQ8cdn7tJCDRjPP8qm4aFIKJ1tx/export?format=xlsx"
 
-        df_rotas = pd.read_excel(url, sheet_name="rotas")
-        df_controle = pd.read_excel(url, sheet_name="controle", header=None)
+        # aba principal (consulta)
+        df_rotas = pd.read_excel(url, sheet_name=0)
+
+        # aba controle (segunda aba)
+        df_controle = pd.read_excel(url, sheet_name=1, header=None)
 
         status_site = str(df_controle.iloc[0, 0]).strip().upper()
 
         df_rotas.columns = df_rotas.columns.str.strip().str.lower()
 
         if "nome" not in df_rotas.columns:
-            st.error("❌ A coluna 'nome' não foi encontrada na aba rotas.")
+            st.error("❌ A coluna 'nome' não foi encontrada.")
             st.stop()
 
         df_rotas["nome_normalizado"] = df_rotas["nome"].apply(normalizar_texto)
@@ -48,13 +51,13 @@ def carregar_planilha():
 df, status_site = carregar_planilha()
 
 # ---------------- TRAVA GLOBAL ----------------
+st.title("SPX | Consulta de Rotas")
+
 if status_site != "LIBERADO":
-    st.title("SPX | Consulta de Rotas")
     st.warning("🔒 Consulta temporariamente indisponível. Aguarde a liberação da operação.")
     st.stop()
 
 # ---------------- CABEÇALHO ----------------
-st.title("SPX | Consulta de Rotas")
 st.caption(f"📅 Base atualizada em: {datetime.now().strftime('%d/%m/%Y %H:%M')}")
 
 # ---------------- BUSCA ----------------
@@ -74,10 +77,7 @@ if nome_input:
         else:
             st.success("✅ Você tem **1 rota** hoje")
 
-        colunas_exibir = []
-        for col in ["rota", "bairro"]:
-            if col in resultado.columns:
-                colunas_exibir.append(col)
+        colunas_exibir = [c for c in ["rota", "bairro"] if c in resultado.columns]
 
         st.dataframe(
             resultado[colunas_exibir].reset_index(drop=True),
