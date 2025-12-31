@@ -8,8 +8,33 @@ st.set_page_config(
     layout="centered"
 )
 
-st.title("🚚 SPX | Consulta de Rotas")
-st.markdown("Consulta disponível **somente após a alocação das rotas**.")
+# ---------------- ESTILO (CORES / LAYOUT) ----------------
+st.markdown("""
+<style>
+    body {
+        background-color: #f7f7f7;
+    }
+    .card {
+        background-color: #ffffff;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        margin-bottom: 20px;
+    }
+    .titulo {
+        color: #FF6A00;
+        font-weight: 700;
+    }
+    .sub {
+        color: #555;
+        font-size: 14px;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# ---------------- TÍTULO ----------------
+st.markdown("<h2 class='titulo'>🚚 SPX | Consulta de Rotas</h2>", unsafe_allow_html=True)
+st.markdown("<p class='sub'>Consulta disponível somente após a alocação das rotas</p>", unsafe_allow_html=True)
 
 # ---------------- LINK DA PLANILHA ----------------
 URL = "https://docs.google.com/spreadsheets/d/1x4P8sHQ8cdn7tJCDRjPP8qm4aFIKJ1tx/export?format=xlsx"
@@ -23,7 +48,6 @@ def carregar_base():
         dtype=str
     )
 
-    # Normalização crítica
     df.columns = df.columns.str.strip()
     df["Cidade"] = df["Cidade"].fillna("").astype(str)
 
@@ -32,8 +56,27 @@ def carregar_base():
 try:
     df = carregar_base()
 except Exception as e:
-    st.error(f"Erro ao carregar a base de dados: {e}")
+    st.error(f"Erro ao carregar a base: {e}")
     st.stop()
+
+# ---------------- SIDEBAR ADMIN ----------------
+with st.sidebar:
+    st.markdown("### 🔐 Área Administrativa")
+    senha = st.text_input("Senha admin", type="password")
+
+    if senha == "LPA2026":
+        st.success("Admin ativo")
+
+        if st.button("🔄 Limpar cache"):
+            st.cache_data.clear()
+            st.success("Cache limpo! Atualize a página.")
+
+        st.markdown("—")
+        st.write("Colunas carregadas:")
+        st.write(df.columns.tolist())
+
+    elif senha:
+        st.error("Senha incorreta")
 
 # ---------------- CONFERÊNCIA DAS COLUNAS ----------------
 colunas_necessarias = ["Placa", "Nome", "Bairro", "Rota", "Cidade"]
@@ -43,13 +86,14 @@ for col in colunas_necessarias:
         st.error(f"Coluna obrigatória não encontrada: {col}")
         st.stop()
 
-# ---------------- CAMPO DE BUSCA ----------------
+# ---------------- CONSULTA ----------------
+st.markdown("<div class='card'>", unsafe_allow_html=True)
+
 nome_busca = st.text_input(
     "Digite o nome completo ou parcial do motorista:",
     placeholder="Ex: Adriana Cardoso"
 )
 
-# ---------------- RESULTADO ----------------
 if nome_busca:
     resultado = df[df["Nome"].str.contains(nome_busca, case=False, na=False)]
 
@@ -62,10 +106,5 @@ if nome_busca:
         st.success(f"{len(resultado)} rota(s) encontrada(s):")
 
         st.dataframe(
-            resultado[
-                ["Placa", "Nome", "Bairro", "Rota", "Cidade"]
-            ],
-            use_container_width=True
-        )
-else:
-    st.info("Digite um nome para consultar a rota.")
+            resultado[["Placa", "Nome", "Cidade", "Bairro", "Rota"]],
+            use_containe_
