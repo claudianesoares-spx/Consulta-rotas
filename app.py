@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+from datetime import datetime
 
 # ---------------- CONFIGURAÇÃO DA PÁGINA ----------------
 st.set_page_config(
@@ -8,7 +9,7 @@ st.set_page_config(
     layout="centered"
 )
 
-# ---------------- LIMPEZA DE CACHE (GARANTIA) ----------------
+# ---------------- LIMPEZA DE CACHE INICIAL ----------------
 st.cache_data.clear()
 
 # ---------------- ESTILO (CSS) ----------------
@@ -76,18 +77,16 @@ st.markdown("""
 # ---------------- URL DA PLANILHA ----------------
 URL_PLANILHA = "https://docs.google.com/spreadsheets/d/1x4P8sHQ8cdn7tJCDRjPP8qm4aFIKJ1tx/export?format=xlsx"
 
-# ---------------- LEITURA DA ABA CONTROLE ----------------
+# ---------------- CONTROLE (ABERTO / FECHADO) ----------------
 @st.cache_data(ttl=300)
 def carregar_controle():
     df_controle = pd.read_excel(URL_PLANILHA, sheet_name="controle")
-
     df_controle.columns = df_controle.columns.str.strip().str.lower()
 
     if "status_consulta" not in df_controle.columns:
         return "ABERTO"
 
-    valor = str(df_controle.iloc[0]["status_consulta"]).strip().upper()
-    return valor
+    return str(df_controle.iloc[0]["status_consulta"]).strip().upper()
 
 status_site = carregar_controle()
 
@@ -95,15 +94,16 @@ if status_site == "FECHADO":
     st.warning("🚫 Consulta temporariamente indisponível. Aguarde a liberação das rotas.")
     st.stop()
 
-# ---------------- LEITURA DA BASE PRINCIPAL ----------------
+# ---------------- BASE PRINCIPAL + TIMESTAMP ----------------
 @st.cache_data(ttl=300)
-def carregar_base():
+def carregar_base_com_timestamp():
     df = pd.read_excel(URL_PLANILHA)
     df.columns = df.columns.str.strip()
     df = df.fillna("")
-    return df
+    timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    return df, timestamp
 
-df = carregar_base()
+df, ultima_atualizacao = carregar_base_com_timestamp()
 
 # ---------------- CONFERÊNCIA DAS COLUNAS ----------------
 colunas_necessarias = ["Placa", "Nome", "Bairro", "Rota", "Cidade"]
@@ -149,9 +149,20 @@ with st.expander("🔒 Área Administrativa"):
 
     if senha == "LPA2026":
         st.success("Acesso administrativo liberado")
+
+        # STATUS VISÍVEL SOMENTE PARA ADMIN
+        st.markdown(f"**🔄 Status da consulta:** `{status_site}`")
+        st.markdown(f"**🕒 Última atualização da base:** `{ultima_atualizacao}`")
+
+        # BOTÃO ATUALIZAR AGORA
+        if st.button("🔁 Atualizar agora"):
+            st.cache_data.clear()
+            st.success("Base atualizada com sucesso. Recarregando...")
+            st.rerun()
+
         st.write("📊 Visualização completa da base:")
         st.dataframe(df, use_container_width=True)
-        st.markdown(f"**Status da consulta:** `{status_site}`")
+
     elif senha:
         st.error("Senha incorreta")
 
