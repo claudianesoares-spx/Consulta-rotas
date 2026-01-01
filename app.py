@@ -1,80 +1,79 @@
 import streamlit as st
 
-# ---------------- CONFIGURAÇÃO DA PÁGINA ----------------
+# ---------------- CONFIGURAÇÃO ----------------
 st.set_page_config(
     page_title="SPX | Consulta de Rotas",
     page_icon="🚚",
     layout="centered"
 )
 
-# ---------------- INICIALIZAÇÃO DE ESTADO ----------------
-if "master_password" not in st.secrets:
-    st.secrets["master_password"] = ""
-if "oper_password" not in st.secrets:
-    st.secrets["oper_password"] = ""
-if "status" not in st.secrets:
-    st.secrets["status"] = "FECHADO"
+# ---------------- SENHAS FIXAS ----------------
+SENHA_MASTER = "MASTER2026"
+SENHA_OPERACIONAL = "OPER2026"
 
-# ---------------- CONFIGURAÇÃO INICIAL ----------------
-if st.secrets["master_password"] == "" or st.secrets["oper_password"] == "":
-    st.title("🔐 Configuração Inicial")
+# ---------------- ESTADO ----------------
+if "logado" not in st.session_state:
+    st.session_state.logado = False
 
-    master = st.text_input("Defina a senha MASTER", type="password")
-    oper = st.text_input("Defina a senha OPERACIONAL", type="password")
+if "perfil" not in st.session_state:
+    st.session_state.perfil = None
 
-    if st.button("Salvar senhas"):
-        if master and oper:
-            st.secrets["master_password"] = master
-            st.secrets["oper_password"] = oper
-            st.success("✅ Senhas configuradas com sucesso!")
-            st.rerun()
-        else:
-            st.error("Preencha ambas as senhas.")
-    st.stop()
+if "status" not in st.session_state:
+    st.session_state.status = "FECHADO"
 
 # ---------------- LOGIN ----------------
 st.title("🚚 SPX | Consulta de Rotas")
-senha = st.text_input("Digite sua senha", type="password")
 
-if senha == st.secrets["master_password"]:
-    perfil = "MASTER"
-elif senha == st.secrets["oper_password"]:
-    perfil = "OPERACIONAL"
-else:
-    perfil = None
+if not st.session_state.logado:
+    senha = st.text_input("Digite sua senha", type="password")
 
-if not perfil:
-    st.warning("🔒 Acesso restrito")
+    if st.button("Entrar"):
+        if senha == SENHA_MASTER:
+            st.session_state.logado = True
+            st.session_state.perfil = "MASTER"
+            st.rerun()
+
+        elif senha == SENHA_OPERACIONAL:
+            st.session_state.logado = True
+            st.session_state.perfil = "OPERACIONAL"
+            st.rerun()
+
+        else:
+            st.error("❌ Senha incorreta")
+
     st.stop()
 
-st.success(f"Acesso autorizado ({perfil})")
+# ---------------- ÁREA LOGADA ----------------
+st.success(f"Acesso autorizado ({st.session_state.perfil})")
 
-# ---------------- ÁREA ADMINISTRATIVA ----------------
 st.divider()
 st.subheader("⚙️ Área Administrativa")
 
-st.info(f"Status atual: **{st.secrets['status']}**")
+st.info(f"Status atual: **{st.session_state.status}**")
 
 col1, col2 = st.columns(2)
 
 with col1:
     if st.button("🟢 ABRIR"):
-        st.secrets["status"] = "ABERTO"
-        st.success("Status alterado para ABERTO")
-        st.rerun()
+        st.session_state.status = "ABERTO"
+        st.success("Consulta ABERTA")
 
 with col2:
     if st.button("🔴 FECHAR"):
-        st.secrets["status"] = "FECHADO"
-        st.warning("Status alterado para FECHADO")
-        st.rerun()
+        st.session_state.status = "FECHADO"
+        st.warning("Consulta FECHADA")
 
-# ---------------- ÁREA DE CONSULTA ----------------
+# ---------------- CONSULTA ----------------
 st.divider()
 st.subheader("📄 Consulta")
 
-if st.secrets["status"] == "FECHADO":
+if st.session_state.status == "FECHADO":
     st.error("🚫 Consulta fechada no momento.")
 else:
     st.success("✅ Consulta aberta.")
-    st.write("Aqui entra a lógica de consulta de rotas.")
+    st.write("Aqui entra a lógica da consulta de rotas.")
+
+# ---------------- LOGOUT ----------------
+if st.button("Sair"):
+    st.session_state.clear()
+    st.rerun()
