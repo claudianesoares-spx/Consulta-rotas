@@ -8,15 +8,15 @@ st.set_page_config(
     layout="centered"
 )
 
+# ---------------- LIMPEZA DE CACHE (garantia) ----------------
+st.cache_data.clear()
+
 # ---------------- ESTILO (CSS) ----------------
 st.markdown("""
 <style>
-/* Fundo geral */
 .stApp {
     background-color: #f6f7f9;
 }
-
-/* Cabeçalho em card */
 .header-card {
     background: white;
     padding: 24px 28px;
@@ -25,26 +25,21 @@ st.markdown("""
     box-shadow: 0 6px 18px rgba(0,0,0,0.05);
     margin-bottom: 30px;
 }
-
 .header-title {
     font-size: 32px;
     font-weight: 700;
     color: #1f2937;
 }
-
 .header-sub {
     font-size: 14px;
     color: #6b7280;
     margin-top: 4px;
 }
-
 .header-info {
     margin-top: 14px;
     font-size: 15px;
     color: #374151;
 }
-
-/* Card de resultado */
 .result-card {
     background: white;
     padding: 20px;
@@ -52,15 +47,12 @@ st.markdown("""
     border: 1px solid #e5e7eb;
     margin-bottom: 16px;
 }
-
 .result-title {
     font-size: 20px;
     font-weight: 700;
     color: #ff7a00;
     margin-bottom: 12px;
 }
-
-/* ADMIN */
 .admin-card {
     background: #fff7ed;
     padding: 20px;
@@ -81,20 +73,42 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# ---------------- CARREGAMENTO DA BASE ----------------
-@st.cache_data
-def carregar_base():
-    url = "https://docs.google.com/spreadsheets/d/1x4P8sHQ8cdn7tJCDRjPP8qm4aFIKJ1tx/export?format=xlsx"
-    df = pd.read_excel(url)
+# ---------------- URL DA PLANILHA ----------------
+URL_PLANILHA = "https://docs.google.com/spreadsheets/d/1x4P8sHQ8cdn7tJCDRjPP8qm4aFIKJ1tx/export?format=xlsx"
 
+# ---------------- LEITURA ABA CONTROLE ----------------
+@st.cache_data(ttl=300)
+def carregar_controle():
+    df_controle = pd.read_excel(URL_PLANILHA, sheet_name="Controle")
+    status = (
+        df_controle.loc[0, "STATUS"]
+        .astype(str)
+        .strip()
+        .upper()
+    )
+    return status
+
+try:
+    status_site = carregar_controle()
+except Exception:
+    st.error("Erro ao ler a aba Controle.")
+    st.stop()
+
+if status_site == "FECHADO":
+    st.warning("🚫 Consulta temporariamente indisponível. Aguarde a liberação das rotas.")
+    st.stop()
+
+# ---------------- LEITURA BASE PRINCIPAL ----------------
+@st.cache_data(ttl=300)
+def carregar_base():
+    df = pd.read_excel(URL_PLANILHA)
     df.columns = df.columns.str.strip()
     df = df.fillna("")
-
     return df
 
 try:
     df = carregar_base()
-except Exception as e:
+except Exception:
     st.error("Erro ao carregar a base de dados.")
     st.stop()
 
@@ -142,10 +156,10 @@ with st.expander("🔒 Área Administrativa"):
 
     if senha == "LPA2026":
         st.success("Acesso administrativo liberado")
-
         st.write("📊 Visualização completa da base:")
         st.dataframe(df, use_container_width=True)
     elif senha:
         st.error("Senha incorreta")
 
     st.markdown('</div>', unsafe_allow_html=True)
+
