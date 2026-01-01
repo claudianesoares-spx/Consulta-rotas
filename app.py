@@ -18,13 +18,12 @@ LOG_FILE = "logs.csv"
 ABA_LOGS = "Logs"
 URL_PLANILHA = "https://docs.google.com/spreadsheets/d/1F8HC2D8UxRc5R_QBdd-zWu7y6Twqyk3r0NTPN0HCWUI"
 
-# ---------------- TEMPORÁRIO: SENHA HARDCODED ----------------
-# Apenas para desbloquear acesso; depois substitua por st.secrets
+# ---------------- SECRETS ----------------
 segredos = {
     "senha_master": "MASTER2026",
-    "senha_operacional": "",
+    "senha_operacional": "LPA2026",
     "status_site": "ABERTO",
-    "GCP_SERVICE_ACCOUNT": None  # Ainda precisa configurar o JSON depois
+    "GCP_SERVICE_ACCOUNT": st.secrets.get("GCP_SERVICE_ACCOUNT")
 }
 
 # ---------------- GOOGLE SHEETS ----------------
@@ -59,6 +58,37 @@ def registrar_log(acao, nivel):
     else:
         pd.DataFrame([linha]).to_csv(LOG_FILE, mode="a", header=False, index=False)
 
+    # Google Sheets
+    try:
+        planilha = conectar_sheets()
+        if planilha:
+            try:
+                aba = planilha.worksheet(ABA_LOGS)
+            except gspread.WorksheetNotFound:
+                aba = planilha.add_worksheet(title=ABA_LOGS, rows=1000, cols=10)
+
+            df_logs = get_as_dataframe(aba).fillna("")
+            df_logs = pd.concat([df_logs, pd.DataFrame([linha])], ignore_index=True)
+            set_with_dataframe(aba, df_logs)
+    except Exception as e:
+        st.warning(f"Erro ao registrar log na planilha: {e}")
+
+# ---------------- LIMPEZA DE LOGS (3 DIAS) ----------------
+def limpar_logs():
+    planilha = conectar_sheets()
+    if planilha:
+        try:
+            aba = planilha.worksheet(ABA_LOGS)
+            df = get_as_dataframe(aba)
+            df["Data"] = pd.to_datetime(df["Data"], format="%d/%m/%Y", errors="coerce")
+            limite = datetime.now() - timedelta(days=3)
+            df = df[df["Data"] >= limite]
+            set_with_dataframe(aba, df)
+        except:
+            pass
+
+limpar_logs()
+
 # ---------------- ESTILO ----------------
 st.markdown("""
 <style>
@@ -68,6 +98,19 @@ st.markdown("""
     padding: 24px;
     border-radius: 16px;
     border-left: 6px solid #ff7a00;
+}
+.result-card {
+    background: white;
+    padding: 20px;
+    border-radius: 14px;
+    border: 1px solid #e5e7eb;
+    margin-bottom: 16px;
+}
+.result-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #ff7a00;
+    margin-bottom: 12px;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -82,50 +125,4 @@ st.markdown("""
 
 # ---------------- BASE ----------------
 @st.cache_data(ttl=300)
-def carregar_base():
-    try:
-        df = pd.read_excel(f"{URL_PLANILHA}/export?format=xlsx")
-        df.columns = df.columns.str.strip()
-        return df.fillna("")
-    except:
-        st.warning("Não foi possível carregar a planilha, verifique a URL.")
-        return pd.DataFrame()
-
-df = carregar_base()
-
-# ---------------- LOGIN ----------------
-with st.sidebar:
-    st.markdown("## 🔒 Área Administrativa")
-    senha = st.text_input("Senha", type="password")
-
-    nivel = None
-    if senha == segredos["senha_master"]:
-        nivel = "MASTER"
-    elif senha == segredos["senha_operacional"] and segredos["senha_operacional"]:
-        nivel = "OPERACIONAL"
-
-    if nivel:
-        st.success(f"Acesso {nivel}")
-        registrar_log("Login realizado", nivel)
-
-        if nivel == "MASTER":
-            st.markdown("### 📜 Histórico")
-            st.info("Logs na planilha não funcionam nesta versão temporária.")
-    elif senha:
-        st.error("Senha incorreta")
-
-# ---------------- BLOQUEIO ----------------
-if segredos["status_site"] == "FECHADO":
-    st.warning("Consulta indisponível.")
-    st.stop()
-
-# ---------------- BUSCA ----------------
-nome = st.text_input("Digite o nome do motorista")
-
-if nome:
-    res = df[df["Nome"].str.contains(nome, case=False, na=False)]
-    if res.empty:
-        st.warning("❌ Nenhuma rota atribuída.")
-    else:
-        for _, r in res.iterrows():
-            st.success(f"🚚 Rota {r['Rota']} | {r['Nome']} | {r['Placa']}")
+def carre
