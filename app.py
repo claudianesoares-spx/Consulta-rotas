@@ -4,6 +4,8 @@ from datetime import datetime, timedelta
 import json
 import os
 import time
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 
 # ---------------- CONFIGURAÇÃO DA PÁGINA ----------------
 st.set_page_config(
@@ -14,7 +16,6 @@ st.set_page_config(
 
 # ---------------- ARQUIVOS ----------------
 CONFIG_FILE = "config.json"
-LOG_FILE = "logs.csv"
 
 # ---------------- CONFIG INICIAL ----------------
 def carregar_config():
@@ -35,33 +36,56 @@ def salvar_config(config):
     with open(CONFIG_FILE, "w") as f:
         json.dump(config, f)
 
-def registrar_log(acao, nivel):
-    linha = {
-        "Data": datetime.now().strftime("%d/%m/%Y"),
-        "Hora": datetime.now().strftime("%H:%M:%S"),
-        "Ação": acao,
-        "Acesso": nivel
-    }
-    if not os.path.exists(LOG_FILE):
-        pd.DataFrame([linha]).to_csv(LOG_FILE, index=False)
-    else:
-        pd.DataFrame([linha]).to_csv(LOG_FILE, mode="a", header=False, index=False)
-
 config = carregar_config()
+
+# ---------------- URL PLANILHA ----------------
+URL_PLANILHA = "https://docs.google.com/spreadsheets/d/1F8HC2D8UxRc5R_QBdd-zWu7y6Twqyk3r0NTPN0HCWUI/export?format=xlsx"
+
+# ---------------- CARREGA PLANILHA DE ROTAS ----------------
+@st.cache_data(ttl=300)
+def carregar_base():
+    df = pd.read_excel(URL_PLANILHA)
+    df.columns = df.columns.str.strip()
+    df = df.fillna("")
+    return df
+
+df = carregar_base()
+
+# ---------------- AUTENTICAÇÃO GOOGLE SHEETS ----------------
+# Substitua 'service_account.json' pelo seu arquivo JSON da conta de serviço
+scope = ["https://spreadsheets.google.com/feeds", 
+         "https://www.googleapis.com/auth/drive"]
+creds = ServiceAccountCredentials.from_json_keyfile_name("service_account.json", scope)
+client = gspread.authorize(creds)
+sheet_logs = client.open_by_url(URL_PLANILHA).worksheet("Logs")
+
+# ---------------- FUNÇÃO DE LOG ONLINE ----------------
+def registrar_log(acao, nivel):
+    sheet_logs.append_row([
+        datetime.now().strftime("%d/%m/%Y"),
+        datetime.now().strftime("%H:%M:%S"),
+        acao,
+        nivel
+    ])
 
 # ---------------- LIMPEZA AUTOMÁTICA DE LOGS (3 DIAS) ----------------
 def limpar_logs_3_dias():
-    if not os.path.exists(LOG_FILE):
+    all_logs = sheet_logs.get_all_records()
+    if not all_logs:
         return
-    df = pd.read_csv(LOG_FILE)
-    df['Data'] = pd.to_datetime(df['Data'], format="%d/%m/%Y")
+    df_logs = pd.DataFrame(all_logs)
+    df_logs['Data'] = pd.to_datetime(df_logs['Data'], format="%d/%m/%Y")
     limite = datetime.now() - timedelta(days=3)
-    df_limpo = df[df['Data'] >= limite]
-    df_limpo.to_csv(LOG_FILE, index=False)
+    df_limpo = df_logs[df_logs['Data'] >= limite]
+    # Limpa aba e rescreve apenas logs recentes
+    sheet_logs.clear()
+    sheet_logs.append_row(["Data", "Hora", "Ação", "Acesso"])  # cabeçalho
+    for _, row in df_limpo.iterrows():
+        sheet_logs.append_row([row['Data'].strftime("%d/%m/%Y"), row['Hora'], row['Ação'], row['Acesso']])
 
 limpar_logs_3_dias()
 
-# ---------------- ESTILO (INALTERADO) ----------------
+# ---------------- ESTILO ----------------
 st.markdown("""
 <style>
 .stApp { background-color: #f6f7f9; }
@@ -103,18 +127,6 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# ---------------- URL PLANILHA ----------------
-URL_PLANILHA = "https://docs.google.com/spreadsheets/d/1F8HC2D8UxRc5R_QBdd-zWu7y6Twqyk3r0NTPN0HCWUI/export?format=xlsx"
-
-@st.cache_data(ttl=300)
-def carregar_base():
-    df = pd.read_excel(URL_PLANILHA)
-    df.columns = df.columns.str.strip()
-    df = df.fillna("")
-    return df
-
-df = carregar_base()
-
 # ---------------- LOGIN E SENHAS TEMPORÁRIAS ----------------
 temporary_passwords = {}  # {senha_temp: expira_timestamp}
 
@@ -140,7 +152,6 @@ with st.sidebar:
 
     if nivel:
         st.success(f"Acesso {nivel}")
-
         st.markdown(f"**🚦 Status:** `{config['status_site']}`")
 
         col1, col2 = st.columns(2)
@@ -149,7 +160,6 @@ with st.sidebar:
             salvar_config(config)
             registrar_log("Consulta ABERTA", nivel)
             st.rerun()
-
         if col2.button("🔴 Fechar"):
             config["status_site"] = "FECHADO"
             salvar_config(config)
@@ -160,14 +170,12 @@ with st.sidebar:
         if nivel == "MASTER":
             st.markdown("---")
             st.markdown("### 🔑 Gerenciar Senhas")
-
             nova_op = st.text_input("Nova senha operacional")
             if st.button("Salvar senha operacional") and nova_op:
                 config["senha_operacional"] = nova_op
                 salvar_config(config)
                 registrar_log("Senha operacional alterada", nivel)
                 st.success("Senha operacional atualizada")
-
             nova_master = st.text_input("Nova senha master")
             if st.button("Salvar senha master") and nova_master:
                 config["senha_master"] = nova_master
@@ -186,8 +194,7 @@ with st.sidebar:
 
             st.markdown("---")
             st.markdown("### 📜 Histórico")
-            if os.path.exists(LOG_FILE):
-                st.dataframe(pd.read_csv(LOG_FILE), use_container_width=True)
+            st.dataframe(pd.DataFrame(sheet_logs.get_all_records()), use_container_width=True)
 
     elif senha:
         st.error("Senha incorreta")
