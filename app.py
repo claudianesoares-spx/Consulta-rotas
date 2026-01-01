@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import datetime
 import json
 import os
+import time
 
 # ---------------- CONFIGURAÇÃO DA PÁGINA ----------------
 st.set_page_config(
@@ -102,16 +103,28 @@ def carregar_base():
 
 df = carregar_base()
 
-# ---------------- SIDEBAR ADMIN ----------------
+# ---------------- LOGIN E SENHAS TEMPORÁRIAS ----------------
+temporary_passwords = {}  # {senha_temp: expira_timestamp}
+
 with st.sidebar:
     st.markdown("## 🔒 Área Administrativa")
     senha = st.text_input("Senha", type="password")
 
     nivel = None
+    current_time = time.time()
+
+    # Remove temporárias expiradas
+    expired = [k for k, v in temporary_passwords.items() if v < current_time]
+    for k in expired:
+        del temporary_passwords[k]
+
+    # Verifica senha
     if senha == config["senha_master"]:
         nivel = "MASTER"
     elif senha == config["senha_operacional"]:
         nivel = "OPERACIONAL"
+    elif senha in temporary_passwords:
+        nivel = "TEMP"
 
     if nivel:
         st.success(f"Acesso {nivel}")
@@ -149,6 +162,15 @@ with st.sidebar:
                 salvar_config(config)
                 registrar_log("Senha master alterada", nivel)
                 st.success("Senha master atualizada")
+
+            st.markdown("---")
+            st.markdown("### 🔑 Criar senha temporária")
+            temp_senha = st.text_input("Senha temporária")
+            temp_dur = st.number_input("Duração (minutos)", min_value=1, max_value=1440, value=30)
+            if st.button("Gerar senha temporária") and temp_senha:
+                temporary_passwords[temp_senha] = time.time() + temp_dur * 60
+                registrar_log(f"Senha temporária '{temp_senha}' criada por {temp_dur} min", nivel)
+                st.success(f"Senha temporária '{temp_senha}' criada por {temp_dur} min.")
 
             st.markdown("---")
             st.markdown("### 📜 Histórico")
