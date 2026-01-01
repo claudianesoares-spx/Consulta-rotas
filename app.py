@@ -8,7 +8,7 @@ st.set_page_config(
     layout="centered"
 )
 
-# ---------------- LIMPEZA DE CACHE (garantia) ----------------
+# ---------------- LIMPEZA DE CACHE (GARANTIA) ----------------
 st.cache_data.clear()
 
 # ---------------- ESTILO (CSS) ----------------
@@ -76,29 +76,26 @@ st.markdown("""
 # ---------------- URL DA PLANILHA ----------------
 URL_PLANILHA = "https://docs.google.com/spreadsheets/d/1x4P8sHQ8cdn7tJCDRjPP8qm4aFIKJ1tx/export?format=xlsx"
 
-# ---------------- LEITURA ABA CONTROLE ----------------
+# ---------------- LEITURA DA ABA CONTROLE ----------------
 @st.cache_data(ttl=300)
 def carregar_controle():
-    df_controle = pd.read_excel(URL_PLANILHA, sheet_name="Controle")
-    status = (
-        df_controle.loc[0, "STATUS"]
-        .astype(str)
-        .strip()
-        .upper()
-    )
-    return status
+    df_controle = pd.read_excel(URL_PLANILHA, sheet_name="controle")
 
-try:
-    status_site = carregar_controle()
-except Exception:
-    st.error("Erro ao ler a aba Controle.")
-    st.stop()
+    df_controle.columns = df_controle.columns.str.strip().str.lower()
+
+    if "status_consulta" not in df_controle.columns:
+        return "ABERTO"
+
+    valor = str(df_controle.iloc[0]["status_consulta"]).strip().upper()
+    return valor
+
+status_site = carregar_controle()
 
 if status_site == "FECHADO":
     st.warning("🚫 Consulta temporariamente indisponível. Aguarde a liberação das rotas.")
     st.stop()
 
-# ---------------- LEITURA BASE PRINCIPAL ----------------
+# ---------------- LEITURA DA BASE PRINCIPAL ----------------
 @st.cache_data(ttl=300)
 def carregar_base():
     df = pd.read_excel(URL_PLANILHA)
@@ -106,11 +103,7 @@ def carregar_base():
     df = df.fillna("")
     return df
 
-try:
-    df = carregar_base()
-except Exception:
-    st.error("Erro ao carregar a base de dados.")
-    st.stop()
+df = carregar_base()
 
 # ---------------- CONFERÊNCIA DAS COLUNAS ----------------
 colunas_necessarias = ["Placa", "Nome", "Bairro", "Rota", "Cidade"]
@@ -158,8 +151,8 @@ with st.expander("🔒 Área Administrativa"):
         st.success("Acesso administrativo liberado")
         st.write("📊 Visualização completa da base:")
         st.dataframe(df, use_container_width=True)
+        st.markdown(f"**Status da consulta:** `{status_site}`")
     elif senha:
         st.error("Senha incorreta")
 
     st.markdown('</div>', unsafe_allow_html=True)
-
