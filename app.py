@@ -88,4 +88,44 @@ def carregar_base():
         df.columns = df.columns.str.strip()
         return df.fillna("")
     except:
-        st.warning("Não foi possível car
+        st.warning("Não foi possível carregar a planilha, verifique a URL.")
+        return pd.DataFrame()
+
+df = carregar_base()
+
+# ---------------- LOGIN ----------------
+with st.sidebar:
+    st.markdown("## 🔒 Área Administrativa")
+    senha = st.text_input("Senha", type="password")
+
+    nivel = None
+    if senha == segredos["senha_master"]:
+        nivel = "MASTER"
+    elif senha == segredos["senha_operacional"] and segredos["senha_operacional"]:
+        nivel = "OPERACIONAL"
+
+    if nivel:
+        st.success(f"Acesso {nivel}")
+        registrar_log("Login realizado", nivel)
+
+        if nivel == "MASTER":
+            st.markdown("### 📜 Histórico")
+            st.info("Logs na planilha não funcionam nesta versão temporária.")
+    elif senha:
+        st.error("Senha incorreta")
+
+# ---------------- BLOQUEIO ----------------
+if segredos["status_site"] == "FECHADO":
+    st.warning("Consulta indisponível.")
+    st.stop()
+
+# ---------------- BUSCA ----------------
+nome = st.text_input("Digite o nome do motorista")
+
+if nome:
+    res = df[df["Nome"].str.contains(nome, case=False, na=False)]
+    if res.empty:
+        st.warning("❌ Nenhuma rota atribuída.")
+    else:
+        for _, r in res.iterrows():
+            st.success(f"🚚 Rota {r['Rota']} | {r['Nome']} | {r['Placa']}")
