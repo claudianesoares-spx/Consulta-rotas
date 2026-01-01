@@ -1,20 +1,16 @@
 import streamlit as st
 
-# ---------------- CONFIGURAÇÃO ----------------
+# ---------------- CONFIGURAÇÃO DA PÁGINA ----------------
 st.set_page_config(
     page_title="SPX | Consulta de Rotas",
     page_icon="🚚",
     layout="centered"
 )
 
-# ---------------- SENHAS ----------------
-SENHA_MASTER = "MASTER2026"
-SENHA_OPERACIONAL = "OPER2026"
+# ---------------- SENHA PADRÃO ----------------
+SENHA_ADMIN = "LPA2026"
 
-# ---------------- ESTADO ----------------
-if "perfil" not in st.session_state:
-    st.session_state.perfil = None
-
+# ---------------- ESTADO DO SITE ----------------
 if "status_site" not in st.session_state:
     st.session_state.status_site = "FECHADO"
 
@@ -24,57 +20,43 @@ st.markdown("Consulta disponível **somente após a alocação das rotas**.")
 
 st.divider()
 
-# ===================== ÁREA DO USUÁRIO (SEMPRE VISÍVEL) =====================
-st.subheader("🔍 Consulta")
+# ---------------- ÁREA ADMIN (SIMPLES) ----------------
+st.markdown("### 🔒 Área Administrativa")
 
+senha = st.text_input("Senha administrativa", type="password")
+
+if senha == SENHA_ADMIN:
+    st.success("Acesso administrativo liberado")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        if st.button("🔓 ABRIR CONSULTA"):
+            st.session_state.status_site = "ABERTO"
+            st.success("Consulta ABERTA")
+
+    with col2:
+        if st.button("🔒 FECHAR CONSULTA"):
+            st.session_state.status_site = "FECHADO"
+            st.warning("Consulta FECHADA")
+
+elif senha:
+    st.error("Senha incorreta")
+
+st.divider()
+
+# ---------------- STATUS ATUAL ----------------
+st.markdown(f"### 📌 Status atual: **{st.session_state.status_site}**")
+
+# ---------------- BLOQUEIO DA CONSULTA ----------------
 if st.session_state.status_site == "FECHADO":
     st.warning("🚫 Consulta indisponível no momento.")
-else:
-    nome = st.text_input("Digite o nome do motorista")
-    if nome:
-        st.info("⚠️ Base ainda não conectada.")
+    st.stop()
 
-# ===================== SIDEBAR ADMINISTRATIVA =====================
-with st.sidebar:
-    st.markdown("## 🔒 Área Administrativa")
+# ---------------- CONSULTA (MANTIDA SIMPLES) ----------------
+st.markdown("### 🔍 Consulta")
 
-    senha = st.text_input("Senha administrativa", type="password")
+nome = st.text_input("Digite o nome do motorista")
 
-    if senha == SENHA_MASTER:
-        st.session_state.perfil = "MASTER"
-        st.success("Acesso MASTER")
-
-    elif senha == SENHA_OPERACIONAL:
-        st.session_state.perfil = "OPERACIONAL"
-        st.success("Acesso OPERACIONAL")
-
-    elif senha:
-        st.error("Senha incorreta")
-
-    # -------- PAINEL MASTER --------
-    if st.session_state.perfil == "MASTER":
-        st.markdown("---")
-        st.markdown("### ⚙️ Controles")
-
-        novo_status = st.radio(
-            "Status da Consulta",
-            ["ABERTO", "FECHADO"],
-            index=0 if st.session_state.status_site == "ABERTO" else 1
-        )
-
-        if st.button("Salvar Status"):
-            st.session_state.status_site = novo_status
-            st.success("Status atualizado")
-
-        if st.button("Sair"):
-            st.session_state.perfil = None
-            st.rerun()
-
-    # -------- PAINEL OPERACIONAL --------
-    if st.session_state.perfil == "OPERACIONAL":
-        st.markdown("---")
-        st.info("Perfil operacional não possui controles administrativos.")
-
-        if st.button("Sair"):
-            st.session_state.perfil = None
-            st.rerun()
+if nome:
+    st.info("⚠️ Base de dados ainda não conectada.")
