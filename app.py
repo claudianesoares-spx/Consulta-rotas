@@ -106,28 +106,6 @@ with st.sidebar:
                     registrar_acao(nivel, "FECHOU CONSULTA")
                     st.warning("Consulta FECHADA")
 
-        if nivel == "MASTER":
-            st.markdown("---")
-            nova_senha = st.text_input("Nova senha MASTER", type="password")
-
-            if st.button("Salvar nova senha"):
-                if nova_senha:
-                    config["senha_master"] = nova_senha
-                    registrar_acao("MASTER", "ALTEROU SENHA MASTER")
-                    save_config(config)
-                    st.success("Senha MASTER atualizada")
-
-            st.markdown("---")
-            st.markdown("### 📜 Histórico de ações")
-
-            if config["historico"]:
-                for h in reversed(config["historico"]):
-                    st.markdown(
-                        f"- {h['data']} | **{h['usuario']}** | {h['acao']}"
-                    )
-            else:
-                st.info("Nenhuma ação registrada")
-
 # ================= STATUS ATUAL =================
 st.markdown(f"### 📌 Status atual: **{config['status_site']}**")
 st.divider()
@@ -137,7 +115,7 @@ if config["status_site"] == "FECHADO":
     st.warning("🚫 Consulta indisponível no momento.")
     st.stop()
 
-# ================= CONSULTA SEGURA =================
+# ================= CONSULTA =================
 st.markdown("### 🔍 Consulta de Rotas")
 
 id_motorista = st.text_input("Digite seu ID de motorista")
@@ -146,46 +124,43 @@ if id_motorista:
     url = "https://docs.google.com/spreadsheets/d/1F8HC2D8UxRc5R_QBdd-zWu7y6Twqyk3r0NTPN0HCWUI/export?format=xlsx"
     df = pd.read_excel(url)
 
-    # Garantia de comparação correta
-    df["ID"] = df["ID"].astype(str)
+    # normalização (mantendo sua lógica)
+    df["ID"] = df["ID"].astype(str).str.strip()
+    id_motorista = id_motorista.strip()
 
-resultado = df[df["ID"] == id_motorista.strip()]
+    # ================= BUSCA PELO ID =================
+    resultado = df[df["ID"] == id_motorista]
 
-# ================= MOTORISTA COM ROTA =================
-if not resultado.empty:
-    for _, row in resultado.iterrows():
-        st.markdown(f"""
-        <div class="card">
-            <h4>🚚 Rota: {row['Rota']}</h4>
-            <p>👤 <strong>Motorista:</strong> {row['Nome']}</p>
-            <p>🚗 <strong>Placa:</strong> {row['Placa']}</p>
-            <p>🏙️ <strong>Cidade:</strong> {row['Cidade']}</p>
-            <p>📍 <strong>Bairro:</strong> {row['Bairro']}</p>
-        </div>
-        """, unsafe_allow_html=True)
+    # ===== CASO 1: ID EXISTE (mantém exatamente como já funcionava) =====
+    if not resultado.empty:
+        for _, row in resultado.iterrows():
+            st.markdown(f"""
+            <div class="card">
+                <h4>🚚 Rota: {row['Rota']}</h4>
+                <p>👤 <strong>Motorista:</strong> {row['Nome']}</p>
+                <p>🚗 <strong>Placa:</strong> {row['Placa']}</p>
+                <p>🏙️ <strong>Cidade:</strong> {row['Cidade']}</p>
+                <p>📍 <strong>Bairro:</strong> {row['Bairro']}</p>
+            </div>
+            """, unsafe_allow_html=True)
 
-    # 🔒 quem já tem rota NÃO vê rotas disponíveis
-    st.stop()
+    # ===== CASO 2: ID NÃO EXISTE → MOSTRA ROTAS COM ID VAZIO =====
+    else:
+        st.info("ℹ️ Nenhuma rota atribuída ao seu ID.")
+        st.markdown("### 📦 Rotas disponíveis")
 
-# ================= MOTORISTA SEM ROTA =================
-st.warning("Nenhuma rota atribuída para este ID.")
+        rotas_disponiveis = df[
+            (df["ID"] == "") | (df["ID"].str.lower() == "nan")
+        ]
 
-st.markdown("### 🚚 Rotas disponíveis no momento")
-
-rotas_disponiveis = df[
-    (df["ID"].isna()) | (df["ID"].str.strip() == "")
-]
-
-if rotas_disponiveis.empty:
-    st.info("No momento não há rotas disponíveis.")
-else:
-    for _, row in rotas_disponiveis.iterrows():
-        st.markdown(f"""
-        <div class="card">
-            <h4>🚚 Rota disponível: {row['Rota']}</h4>
-            <p>🏙️ <strong>Cidade:</strong> {row['Cidade']}</p>
-            <p>📍 <strong>Bairro:</strong> {row['Bairro']}</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-
+        if rotas_disponiveis.empty:
+            st.warning("🚫 No momento não há rotas disponíveis.")
+        else:
+            for _, row in rotas_disponiveis.iterrows():
+                st.markdown(f"""
+                <div class="card">
+                    <h4>🚚 Rota: {row['Rota']}</h4>
+                    <p>🏙️ <strong>Cidade:</strong> {row['Cidade']}</p>
+                    <p>📍 <strong>Bairro:</strong> {row['Bairro']}</p>
+                </div>
+                """, unsafe_allow_html=True)
