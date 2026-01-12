@@ -149,18 +149,43 @@ if id_motorista:
     # Garantia de comparação correta
     df["ID"] = df["ID"].astype(str)
 
-    resultado = df[df["ID"] == id_motorista.strip()]
+resultado = df[df["ID"] == id_motorista.strip()]
 
-    if resultado.empty:
-        st.warning("Nenhuma rota encontrada para este ID.")
-    else:
-        for _, row in resultado.iterrows():
-            st.markdown(f"""
-            <div class="card">
-                <h4>🚚 Rota: {row['Rota']}</h4>
-                <p>👤 <strong>Motorista:</strong> {row['Nome']}</p>
-                <p>🚗 <strong>Placa:</strong> {row['Placa']}</p>
-                <p>🏙️ <strong>Cidade:</strong> {row['Cidade']}</p>
-                <p>📍 <strong>Bairro:</strong> {row['Bairro']}</p>
-            </div>
-            """, unsafe_allow_html=True)
+# ================= MOTORISTA COM ROTA =================
+if not resultado.empty:
+    for _, row in resultado.iterrows():
+        st.markdown(f"""
+        <div class="card">
+            <h4>🚚 Rota: {row['Rota']}</h4>
+            <p>👤 <strong>Motorista:</strong> {row['Nome']}</p>
+            <p>🚗 <strong>Placa:</strong> {row['Placa']}</p>
+            <p>🏙️ <strong>Cidade:</strong> {row['Cidade']}</p>
+            <p>📍 <strong>Bairro:</strong> {row['Bairro']}</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # 🔒 quem já tem rota NÃO vê rotas disponíveis
+    st.stop()
+
+# ================= MOTORISTA SEM ROTA =================
+st.warning("Nenhuma rota atribuída para este ID.")
+
+st.markdown("### 🚚 Rotas disponíveis no momento")
+
+rotas_disponiveis = df[
+    (df["ID"].isna()) | (df["ID"].str.strip() == "")
+]
+
+if rotas_disponiveis.empty:
+    st.info("No momento não há rotas disponíveis.")
+else:
+    for _, row in rotas_disponiveis.iterrows():
+        st.markdown(f"""
+        <div class="card">
+            <h4>🚚 Rota disponível: {row['Rota']}</h4>
+            <p>🏙️ <strong>Cidade:</strong> {row['Cidade']}</p>
+            <p>📍 <strong>Bairro:</strong> {row['Bairro']}</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+
