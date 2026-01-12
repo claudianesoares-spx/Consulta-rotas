@@ -165,24 +165,28 @@ if id_motorista:
         if rotas_disponiveis.empty:
             st.warning("🚫 No momento não há rotas disponíveis.")
         else:
-            for _, row in rotas_disponiveis.iterrows():
+            # Agrupar por cidade usando expanders sem alterar cards
+            cidades = rotas_disponiveis["Cidade"].unique()
+            for cidade in cidades:
+                with st.expander(f"🏙️ {cidade}"):
+                    rotas_cidade = rotas_disponiveis[rotas_disponiveis["Cidade"] == cidade]
+                    for _, row in rotas_cidade.iterrows():
+                        form_url = (
+                            "https://docs.google.com/forms/d/e/1FAIpQLSffKb0EPcHCRXv-XiHhgk-w2bTGbt179fJkr879jNdp-AbTxg/viewform"
+                            f"?usp=pp_url"
+                            f"&entry.392776957={id_motorista}"
+                            f"&entry.625563351={row['Cidade']}"
+                            f"&entry.1284288730={row['Bairro']}"
+                            f"&entry.1534916252=Tenho+Interesse"
+                        )
 
-                form_url = (
-                    "https://docs.google.com/forms/d/e/1FAIpQLSffKb0EPcHCRXv-XiHhgk-w2bTGbt179fJkr879jNdp-AbTxg/viewform"
-                    f"?usp=pp_url"
-                    f"&entry.392776957={id_motorista}"
-                    f"&entry.625563351={row['Cidade']}"
-                    f"&entry.1284288730={row['Bairro']}"
-                    f"&entry.1534916252=Tenho+Interesse"
-                )
-
-                st.markdown(f"""
-                <div class="card">
-                    <p>🏙️ <strong>Cidade:</strong> {row['Cidade']}</p>
-                    <p>📍 <strong>Bairro:</strong> {row['Bairro']}</p>
-                    <p>🚗 <strong>Tipo Veículo:</strong> {row.get('Tipo Veiculo', 'Não informado')}</p>
-                    <a href="{form_url}" target="_blank">
-                        👉 Tenho interesse nesta rota
-                    </a>
-                </div>
-                """, unsafe_allow_html=True)
+                        st.markdown(f"""
+                        <div class="card">
+                            <p>🏙️ <strong>Cidade:</strong> {row['Cidade']}</p>
+                            <p>📍 <strong>Bairro:</strong> {row['Bairro']}</p>
+                            <p>🚗 <strong>Tipo Veículo:</strong> {row.get('Tipo Veiculo', 'Não informado')}</p>
+                            <a href="{form_url}" target="_blank">
+                                👉 Tenho interesse nesta rota
+                            </a>
+                        </div>
+                        """, unsafe_allow_html=True)
