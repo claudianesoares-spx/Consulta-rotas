@@ -171,10 +171,15 @@ if id_motorista:
                 with st.expander(f"🏙️ {cidade}"):
                     rotas_cidade = rotas_disponiveis[rotas_disponiveis["Cidade"] == cidade]
                     for _, row in rotas_cidade.iterrows():
+
+                        # 🔴 ÚNICA ALTERAÇÃO CONTROLADA: COMPLEMENTO DO FORM_URL
                         form_url = (
                             "https://docs.google.com/forms/d/e/1FAIpQLSffKb0EPcHCRXv-XiHhgk-w2bTGbt179fJkr879jNdp-AbTxg/viewform"
                             f"?usp=pp_url"
                             f"&entry.392776957={id_motorista}"
+                            f"&entry.1682939517={row['Rota']}"
+                            f"&entry.2002352354={row['Placa']}"
+                            f"&entry.1100254277={row.get('Tipo Veiculo', '')}"
                             f"&entry.625563351={row['Cidade']}"
                             f"&entry.1284288730={row['Bairro']}"
                             f"&entry.1534916252=Tenho+Interesse"
