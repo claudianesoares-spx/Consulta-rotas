@@ -138,10 +138,29 @@ id_motorista = st.text_input("Digite seu ID de motorista")
 
 if id_motorista:
     url = "https://docs.google.com/spreadsheets/d/1F8HC2D8UxRc5R_QBdd-zWu7y6Twqyk3r0NTPN0HCWUI/export?format=xlsx"
-    df = pd.read_excel(url)
 
+    # ===== BASE DE ROTAS =====
+    df = pd.read_excel(url)
     df["ID"] = df["ID"].astype(str).str.strip()
+
+    # ===== BASE DE DRIVERS ATIVOS =====
+    df_drivers = pd.read_excel(
+        url,
+        sheet_name="DRIVERS ATIVOS",
+        dtype=str
+    )
+    df_drivers["ID"] = df_drivers["ID"].str.strip()
+    ids_ativos = set(df_drivers["ID"].dropna())
+
     id_motorista = id_motorista.strip()
+
+    # ===== VALIDAÇÃO DO ID =====
+    if id_motorista not in ids_ativos:
+        st.warning(
+            "⚠️ ID não encontrado na base de motoristas ativos.\n\n"
+            "Verifique se digitou corretamente."
+        )
+        st.stop()
 
     resultado = df[df["ID"] == id_motorista]
 
