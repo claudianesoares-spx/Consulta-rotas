@@ -1,44 +1,89 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>RouteAssist • Belém</title>
+
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: #f7f7f7;
+      font-family: Arial, Helvetica, sans-serif;
+      background-color: #f4f6f8;
       padding: 40px;
     }
+
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: #ffffff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+      text-align: center;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+    }
+
+    p {
+      color: #555;
+    }
+
     .btn {
       display: inline-block;
-      margin-top: 20px;
-      padding: 15px 25px;
-      background: #ff5722;
-      color: white;
+      margin-top: 25px;
+      padding: 15px 30px;
+      background-color: #ff5722;
+      color: #ffffff;
       text-decoration: none;
-      border-radius: 8px;
       font-weight: bold;
+      border-radius: 8px;
+      font-size: 16px;
     }
+
+    .btn:hover {
+      background-color: #e64a19;
+    }
+
     .alert {
-      background: #fff3cd;
+      margin-top: 25px;
       padding: 15px;
+      background-color: #fff3cd;
       border-radius: 6px;
-      margin-top: 20px;
+      font-size: 14px;
+      color: #856404;
+    }
+
+    .footer {
+      margin-top: 30px;
+      font-size: 12px;
+      color: #999;
     }
   </style>
 </head>
+
 <body>
+  <div class="container">
+    <h1>🚚 RouteAssist • Belém</h1>
+    <p>Plataforma operacional ativa.</p>
 
-<h1>🚚 RouteAssist • Belém</h1>
-<p>Plataforma operacional ativa.</p>
+    <a
+      class="btn"
+      href="https://routeassist-belem.streamlit.app/"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      👉 Acessar Operação Belém
+    </a>
 
-<a class="btn" href="https://SEU_STREAMLIT_AQUI" target="_blank">
-👉 Acessar Operação
-</a>
+    <div class="alert">
+      ⚠️ Em horários de pico, o carregamento pode levar alguns segundos.<br>
+      Segurança e estabilidade sempre em primeiro lugar.
+    </div>
 
-<div class="alert">
-⚠️ Em horários de pico, aguarde alguns segundos para carregamento.
-</div>
-
+    <div class="footer">
+      © RouteAssist — Operação Belém
+    </div>
+  </div>
 </body>
 </html>
