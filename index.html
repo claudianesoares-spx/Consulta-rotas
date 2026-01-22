@@ -62,16 +62,67 @@
             font-size: 12px;
             color: #999;
         }
+
+        /* ===== MINI FILA ===== */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(244,246,248,0.95);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+        }
+
+        .queue-box {
+            background: #ffffff;
+            padding: 40px;
+            border-radius: 16px;
+            text-align: center;
+            box-shadow: 0 12px 28px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .queue-box h2 {
+            margin-bottom: 10px;
+            font-size: 22px;
+            color: #1f2d3d;
+        }
+
+        .queue-box p {
+            font-size: 15px;
+            color: #555;
+            margin-bottom: 20px;
+        }
+
+        .progress {
+            width: 100%;
+            height: 12px;
+            background: #e6e6e6;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: #00c6ff;
+            transition: width 0.1s linear;
+        }
     </style>
 </head>
 
 <body>
+
     <div class="container">
         <h1>RouteAssist</h1>
         <p>Central de apoio operacional – Belém</p>
 
-        <button class="btn"
-            onclick="window.open('https://routeassist-belem.streamlit.app/', '_blank')">
+        <button class="btn" onclick="startQueue()">
             Acessar Sistema
         </button>
 
@@ -79,5 +130,42 @@
             Created and developed by Claudiane Vieira · Dec 2025
         </div>
     </div>
+
+    <!-- MINI FILA -->
+    <div class="overlay" id="overlay">
+        <div class="queue-box">
+            <h2>Organizando acessos</h2>
+            <p>Aguarde alguns segundos para manter a estabilidade do sistema.</p>
+
+            <div class="progress">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function startQueue() {
+            const overlay = document.getElementById("overlay");
+            const bar = document.getElementById("progressBar");
+
+            overlay.style.display = "flex";
+
+            let progress = 0;
+            const duration = 10000; // 10 segundos
+            const intervalTime = 100;
+            const step = 100 / (duration / intervalTime);
+
+            const interval = setInterval(() => {
+                progress += step;
+                bar.style.width = progress + "%";
+
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    window.location.href = "https://routeassist-belem.streamlit.app/";
+                }
+            }, intervalTime);
+        }
+    </script>
+
 </body>
 </html>
